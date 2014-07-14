@@ -42,9 +42,9 @@
 | you to include a citation or acknowledgment whenever you present or
 | publish results that are based on it.
 \===================================================================*/
- 
- //AJS mods to make it work with Composite hyperstacks 11-4-2013
- 
+
+//AJS mods to make it work with Composite hyperstacks 11-4-2013
+
 // ImageJ
 import ij.IJ;
 import ij.ImagePlus;
@@ -108,6 +108,15 @@ public void run (
 		IJ.error("Unable to process either RGB or HSB stacks");
 		return;
 	}
+	
+	final int width = imp.getWidth();
+	final int height = imp.getHeight();
+	final int targetSlice = imp.getCurrentSlice();
+	final int chs = imp.getNChannels();
+	final int ch = imp.getChannel();
+	String msg ="Target slice: "+Integer.toString(targetSlice);
+	if(chs>1) msg="Target slice: "+Integer.toString((targetSlice+chs-ch)/chs)+"  channel: "+Integer.toString(ch);
+	
 	GenericDialog gd = new GenericDialog("StackReg");
 	final String[] transformationItem = {
 		"Translation",
@@ -117,6 +126,7 @@ public void run (
 	};
 	gd.addChoice("Transformation:", transformationItem, "Rigid Body");
 	gd.addCheckbox("Credits", false);
+	gd.addMessage(msg);
 	gd.showDialog();
 	if (gd.wasCanceled()) {
 		return;
@@ -128,9 +138,7 @@ public void run (
 		dialog.setVisible(true);
 		return;
 	}
-	final int width = imp.getWidth();
-	final int height = imp.getHeight();
-	final int targetSlice = imp.getCurrentSlice();
+	
 	double[][] globalTransform = {
 		{1.0, 0.0, 0.0},
 		{0.0, 1.0, 0.0},
