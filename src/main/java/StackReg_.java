@@ -1,11 +1,10 @@
 /*====================================================================	
-| Version: March 2, 2005
+| Version: July 7, 2011
 \===================================================================*/
 
 /*====================================================================
-| EPFL/STI/IOA/LIB
+| EPFL/STI/IMT/LIB/BM.4.137
 | Philippe Thevenaz
-| Bldg. BM-Ecublens 4.137
 | Station 17
 | CH-1015 Lausanne VD
 | Switzerland
@@ -33,8 +32,10 @@
 \===================================================================*/
 
 /*====================================================================
-| Additional help available at http://bigwww.epfl.ch/thevenaz/stackreg/
-| Ancillary TurboReg_ plugin available at: http://bigwww.epfl.ch/thevenaz/turboreg/
+| Additional help available at
+| http://bigwww.epfl.ch/thevenaz/stackreg/
+| Ancillary TurboReg_ plugin available at
+| http://bigwww.epfl.ch/thevenaz/turboreg/
 |
 | You'll be free to use this software for research purposes, but you
 | should not redistribute it without our consent. In addition, we expect
@@ -76,24 +77,22 @@ import java.lang.reflect.Method;
 /*====================================================================
 |	StackReg_
 \===================================================================*/
-
-/********************************************************************/
 public class StackReg_
 	implements
 		PlugIn
 
-{ /* begin class StackReg_ */
+{ /* class StackReg_ */
 
 /*....................................................................
-	Private global variables
+	private variables
 ....................................................................*/
-private static final double TINY = (double)Float.intBitsToFloat((int)0x33FFFFFF);
+private static final double TINY =
+	(double)Float.intBitsToFloat((int)0x33FFFFFF);
 
 /*....................................................................
-	Public methods
+	PlugIn methods
 ....................................................................*/
-
-/********************************************************************/
+/*------------------------------------------------------------------*/
 public void run (
 	final String arg
 ) {
@@ -200,21 +199,24 @@ public void run (
 			target = new ImagePlus("StackRegTarget",
 				new ByteProcessor(width, height, new byte[width * height],
 				imp.getProcessor().getColorModel()));
-			target.getProcessor().copyBits(imp.getProcessor(), 0, 0, Blitter.COPY);
+			target.getProcessor().copyBits(
+				imp.getProcessor(), 0, 0, Blitter.COPY);
 			break;
 		}
 		case ImagePlus.GRAY16: {
 			target = new ImagePlus("StackRegTarget",
 				new ShortProcessor(width, height, new short[width * height],
 				imp.getProcessor().getColorModel()));
-			target.getProcessor().copyBits(imp.getProcessor(), 0, 0, Blitter.COPY);
+			target.getProcessor().copyBits(
+				imp.getProcessor(), 0, 0, Blitter.COPY);
 			break;
 		}
 		case ImagePlus.GRAY32: {
 			target = new ImagePlus("StackRegTarget",
 				new FloatProcessor(width, height, new float[width * height],
 				imp.getProcessor().getColorModel()));
-			target.getProcessor().copyBits(imp.getProcessor(), 0, 0, Blitter.COPY);
+			target.getProcessor().copyBits(
+				imp.getProcessor(), 0, 0, Blitter.COPY);
 			break;
 		}
 		default: {
@@ -250,7 +252,8 @@ public void run (
 			case ImagePlus.GRAY8:
 			case ImagePlus.GRAY16:
 			case ImagePlus.GRAY32: {
-				target.getProcessor().copyBits(imp.getProcessor(), 0, 0, Blitter.COPY);
+				target.getProcessor().copyBits(
+					imp.getProcessor(), 0, 0, Blitter.COPY);
 				break;
 			}
 			default: {
@@ -272,9 +275,8 @@ public void run (
 } /* end run */
 
 /*....................................................................
-	Private methods
+	private methods
 ....................................................................*/
-
 /*------------------------------------------------------------------*/
 private void computeStatistics (
 	final ImagePlus imp,
@@ -286,7 +288,8 @@ private void computeStatistics (
 	double g;
 	double b;
 	if (imp.getProcessor().getPixels() instanceof byte[]) {
-		final IndexColorModel icm = (IndexColorModel)imp.getProcessor().getColorModel();
+		final IndexColorModel icm =
+			(IndexColorModel)imp.getProcessor().getColorModel();
 		final int mapSize = icm.getMapSize();
 		final byte[] reds = new byte[mapSize];
 		final byte[] greens = new byte[mapSize];
@@ -369,7 +372,8 @@ private double[] getColorWeightsFromPrincipalComponents (
 	final ImagePlus imp
 ) {
 	final double[] average = {0.0, 0.0, 0.0};
-	final double[][] scatterMatrix = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+	final double[][] scatterMatrix =
+		{{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
 	computeStatistics(imp, average, scatterMatrix);
 	double[] eigenvalue = getEigenvalues(scatterMatrix);
 	if ((eigenvalue[0] * eigenvalue[0] + eigenvalue[1] * eigenvalue[1]
@@ -393,7 +397,8 @@ private double[] getEigenvalues (
 ) {
 	final double[] a = {
 		scatterMatrix[0][0] * scatterMatrix[1][1] * scatterMatrix[2][2]
-			+ 2.0 * scatterMatrix[0][1] * scatterMatrix[1][2] * scatterMatrix[2][0]
+			+ 2.0 * scatterMatrix[0][1] * scatterMatrix[1][2]
+			* scatterMatrix[2][0]
 			- scatterMatrix[0][1] * scatterMatrix[0][1] * scatterMatrix[2][2]
 			- scatterMatrix[1][2] * scatterMatrix[1][2] * scatterMatrix[0][0]
 			- scatterMatrix[2][0] * scatterMatrix[2][0] * scatterMatrix[1][1],
@@ -408,8 +413,8 @@ private double[] getEigenvalues (
 	};
 	double[] RealRoot = new double[3];
 	double Q = (3.0 * a[1] - a[2] * a[2] / a[3]) / (9.0 * a[3]);
-	double R = (a[1] * a[2] - 3.0 * a[0] * a[3] - (2.0 / 9.0) * a[2] * a[2] * a[2] / a[3])
-		/ (6.0 * a[3] * a[3]);
+	double R = (a[1] * a[2] - 3.0 * a[0] * a[3]
+		- (2.0 / 9.0) * a[2] * a[2] * a[2] / a[3]) / (6.0 * a[3] * a[3]);
 	double Det = Q * Q * Q + R * R;
 	if (Det < 0.0) {
 		Det = 2.0 * Math.sqrt(-Q);
@@ -448,7 +453,8 @@ private double[] getEigenvalues (
 		}
 	}
 	else if (Det == 0.0) {
-		final double P = 2.0 * ((R < 0.0) ? (Math.pow(-R, 1.0 / 3.0)) : (Math.pow(R, 1.0 / 3.0)));
+		final double P = 2.0 * ((R < 0.0) ? (Math.pow(-R, 1.0 / 3.0))
+			: (Math.pow(R, 1.0 / 3.0)));
 		Q = (1.0 / 3.0) * a[2] / a[3];
 		if (P < 0) {
 			RealRoot[0] = P - Q;
@@ -594,7 +600,8 @@ private double[] getEigenvector (
 				u++;
 			}
 		}
-		reducedEigenvector = linearLeastSquares(reducedMatrix, reducedEigenvector);
+		reducedEigenvector = linearLeastSquares(reducedMatrix,
+			reducedEigenvector);
 		for (int i = 0, u = 0; (i < n); i++) {
 			if (!ignore[i]) {
 				eigenvector[i] = reducedEigenvector[u];
@@ -645,7 +652,8 @@ private ImagePlus getGray32 (
 	double b;
 	if (imp.getProcessor().getPixels() instanceof byte[]) {
 		final byte[] pixels = (byte[])imp.getProcessor().getPixels();
-		final IndexColorModel icm = (IndexColorModel)imp.getProcessor().getColorModel();
+		final IndexColorModel icm =
+			(IndexColorModel)imp.getProcessor().getColorModel();
 		final int mapSize = icm.getMapSize();
 		final byte[] reds = new byte[mapSize];
 		final byte[] greens = new byte[mapSize];
@@ -659,7 +667,8 @@ private ImagePlus getGray32 (
 			r = (double)(reds[index] & 0xFF);
 			g = (double)(greens[index] & 0xFF);
 			b = (double)(blues[index] & 0xFF);
-			gray[k] = (float)(colorWeights[0] * r + colorWeights[1] * g + colorWeights[2] * b);
+			gray[k] = (float)(colorWeights[0] * r + colorWeights[1] * g
+				+ colorWeights[2] * b);
 		}
 	}
 	else if (imp.getProcessor().getPixels() instanceof int[]) {
@@ -668,7 +677,8 @@ private ImagePlus getGray32 (
 			r = (double)((pixels[k] & 0x00FF0000) >>> 16);
 			g = (double)((pixels[k] & 0x0000FF00) >>> 8);
 			b = (double)(pixels[k] & 0x000000FF);
-			gray[k] = (float)(colorWeights[0] * r + colorWeights[1] * g + colorWeights[2] * b);
+			gray[k] = (float)(colorWeights[0] * r + colorWeights[1] * g
+				+ colorWeights[2] * b);
 		}
 	}
 	return(gray32);
@@ -718,16 +728,19 @@ private double[][] getTransformationMatrix (
 		}
 		case 1: {
 			final double angle = Math.atan2(fromCoord[2][0] - fromCoord[1][0],
-				fromCoord[2][1] - fromCoord[1][1]) - Math.atan2(toCoord[2][0] - toCoord[1][0],
+				fromCoord[2][1] - fromCoord[1][1])
+				- Math.atan2(toCoord[2][0] - toCoord[1][0],
 				toCoord[2][1] - toCoord[1][1]);
 			final double c = Math.cos(angle);
 			final double s = Math.sin(angle);
 			matrix[0][0] = c;
 			matrix[0][1] = -s;
-			matrix[0][2] = toCoord[0][0] - c * fromCoord[0][0] + s * fromCoord[0][1];
+			matrix[0][2] = toCoord[0][0]
+				- c * fromCoord[0][0] + s * fromCoord[0][1];
 			matrix[1][0] = s;
 			matrix[1][1] = c;
-			matrix[1][2] = toCoord[0][1] - s * fromCoord[0][0] - c * fromCoord[0][1];
+			matrix[1][2] = toCoord[0][1]
+				- s * fromCoord[0][0] - c * fromCoord[0][1];
 			break;
 		}
 		case 2: {
@@ -1019,10 +1032,12 @@ private ImagePlus registerSlice (
 			}
 		}
 		final FileSaver sourceFile = new FileSaver(source);
-		final String sourcePathAndFileName = IJ.getDirectory("temp") + source.getTitle();
+		final String sourcePathAndFileName =
+			IJ.getDirectory("temp") + source.getTitle();
 		sourceFile.saveAsTiff(sourcePathAndFileName);
 		final FileSaver targetFile = new FileSaver(target);
-		final String targetPathAndFileName = IJ.getDirectory("temp") + target.getTitle();
+		final String targetPathAndFileName =
+			IJ.getDirectory("temp") + target.getTitle();
 		targetFile.saveAsTiff(targetPathAndFileName);
 		switch (transformation) {
 			case 0: {
@@ -1096,22 +1111,30 @@ private ImagePlus registerSlice (
 			throw(new ClassNotFoundException());
 		}
 		target.setProcessor(null, source.getProcessor());
-		method = turboReg.getClass().getMethod("getSourcePoints", null);
-		sourcePoints = ((double[][])method.invoke(turboReg, null));
-		method = turboReg.getClass().getMethod("getTargetPoints", null);
-		targetPoints = ((double[][])method.invoke(turboReg, null));
+		method = turboReg.getClass().getMethod("getSourcePoints",
+			(Class[])null);
+		sourcePoints = (double[][])method.invoke(turboReg);
+		method = turboReg.getClass().getMethod("getTargetPoints",
+			(Class[])null);
+		targetPoints = (double[][])method.invoke(turboReg);
 		localTransform = getTransformationMatrix(targetPoints, sourcePoints,
 			transformation);
-		double[][] rescued = {
-			{globalTransform[0][0], globalTransform[0][1], globalTransform[0][2]},
-			{globalTransform[1][0], globalTransform[1][1], globalTransform[1][2]},
-			{globalTransform[2][0], globalTransform[2][1], globalTransform[2][2]}
-		};
+		double[][] rescued =
+			{{globalTransform[0][0],
+			globalTransform[0][1],
+			globalTransform[0][2]},
+			{globalTransform[1][0],
+			globalTransform[1][1],
+			globalTransform[1][2]},
+			{globalTransform[2][0],
+			globalTransform[2][1],
+			globalTransform[2][2]}};
 		for (int i = 0; (i < 3); i++) {
 			for (int j = 0; (j < 3); j++) {
 				globalTransform[i][j] = 0.0;
 				for (int k = 0; (k < 3); k++) {
-					globalTransform[i][j] += localTransform[i][k] * rescued[k][j];
+					globalTransform[i][j] +=
+						localTransform[i][k] * rescued[k][j];
 				}
 			}
 		}
@@ -1142,13 +1165,16 @@ private ImagePlus registerSlice (
 				ImagePlus transformedSourceG = null;
 				ImagePlus transformedSourceB = null;
 				final FileSaver sourceFileR = new FileSaver(sourceR);
-				final String sourcePathAndFileNameR = IJ.getDirectory("temp") + sourceR.getTitle();
+				final String sourcePathAndFileNameR =
+					IJ.getDirectory("temp") + sourceR.getTitle();
 				sourceFileR.saveAsTiff(sourcePathAndFileNameR);
 				final FileSaver sourceFileG = new FileSaver(sourceG);
-				final String sourcePathAndFileNameG = IJ.getDirectory("temp") + sourceG.getTitle();
+				final String sourcePathAndFileNameG =
+					IJ.getDirectory("temp") + sourceG.getTitle();
 				sourceFileG.saveAsTiff(sourcePathAndFileNameG);
 				final FileSaver sourceFileB = new FileSaver(sourceB);
-				final String sourcePathAndFileNameB = IJ.getDirectory("temp") + sourceB.getTitle();
+				final String sourcePathAndFileNameB =
+					IJ.getDirectory("temp") + sourceB.getTitle();
 				sourceFileB.saveAsTiff(sourcePathAndFileNameB);
 				switch (transformation) {
 					case 0: {
@@ -1162,10 +1188,13 @@ private ImagePlus registerSlice (
 						}
 						turboRegR = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileNameR
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -translation"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 2) + " " + (height / 2)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 2)
+							+ " " + (height / 2)
 							+ " -hideOutput"
 						);
 						if (turboRegR == null) {
@@ -1173,18 +1202,24 @@ private ImagePlus registerSlice (
 						}
 						turboRegG = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileNameG
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -translation"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 2) + " " + (height / 2)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 2)
+							+ " " + (height / 2)
 							+ " -hideOutput"
 						);
 						turboRegB = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileNameB
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -translation"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 2) + " " + (height / 2)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 2)
+							+ " " + (height / 2)
 							+ " -hideOutput"
 						);
 						break;
@@ -1208,12 +1243,18 @@ private ImagePlus registerSlice (
 							+ " -file " + sourcePathAndFileNameR
 							+ " " + width + " " + height
 							+ " -rigidBody"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 2) + " " + (height / 2)
-							+ " " + sourcePoints[1][0] + " " + sourcePoints[1][1]
-							+ " " + (width / 2) + " " + (height / 4)
-							+ " " + sourcePoints[2][0] + " " + sourcePoints[2][1]
-							+ " " + (width / 2) + " " + ((3 * height) / 4)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 2)
+							+ " " + (height / 2)
+							+ " " + sourcePoints[1][0]
+							+ " " + sourcePoints[1][1]
+							+ " " + (width / 2)
+							+ " " + (height / 4)
+							+ " " + sourcePoints[2][0]
+							+ " " + sourcePoints[2][1]
+							+ " " + (width / 2)
+							+ " " + ((3 * height) / 4)
 							+ " -hideOutput"
 						);
 						if (turboRegR == null) {
@@ -1223,24 +1264,37 @@ private ImagePlus registerSlice (
 							+ " -file " + sourcePathAndFileNameG
 							+ " " + width + " " + height
 							+ " -rigidBody"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 2) + " " + (height / 2)
-							+ " " + sourcePoints[1][0] + " " + sourcePoints[1][1]
-							+ " " + (width / 2) + " " + (height / 4)
-							+ " " + sourcePoints[2][0] + " " + sourcePoints[2][1]
-							+ " " + (width / 2) + " " + ((3 * height) / 4)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 2)
+							+ " " + (height / 2)
+							+ " " + sourcePoints[1][0]
+							+ " " + sourcePoints[1][1]
+							+ " " + (width / 2)
+							+ " " + (height / 4)
+							+ " " + sourcePoints[2][0]
+							+ " " + sourcePoints[2][1]
+							+ " " + (width / 2)
+							+ " " + ((3 * height) / 4)
 							+ " -hideOutput"
 						);
 						turboRegB = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileNameB
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -rigidBody"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 2) + " " + (height / 2)
-							+ " " + sourcePoints[1][0] + " " + sourcePoints[1][1]
-							+ " " + (width / 2) + " " + (height / 4)
-							+ " " + sourcePoints[2][0] + " " + sourcePoints[2][1]
-							+ " " + (width / 2) + " " + ((3 * height) / 4)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 2)
+							+ " " + (height / 2)
+							+ " " + sourcePoints[1][0]
+							+ " " + sourcePoints[1][1]
+							+ " " + (width / 2)
+							+ " " + (height / 4)
+							+ " " + sourcePoints[2][0]
+							+ " " + sourcePoints[2][1]
+							+ " " + (width / 2)
+							+ " " + ((3 * height) / 4)
 							+ " -hideOutput"
 						);
 						break;
@@ -1259,12 +1313,17 @@ private ImagePlus registerSlice (
 						}
 						turboRegR = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileNameR
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -scaledRotation"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 4) + " " + (height / 2)
-							+ " " + sourcePoints[1][0] + " " + sourcePoints[1][1]
-							+ " " + ((3 * width) / 4) + " " + (height / 2)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 4)
+							+ " " + (height / 2)
+							+ " " + sourcePoints[1][0]
+							+ " " + sourcePoints[1][1]
+							+ " " + ((3 * width) / 4)
+							+ " " + (height / 2)
 							+ " -hideOutput"
 						);
 						if (turboRegR == null) {
@@ -1272,22 +1331,32 @@ private ImagePlus registerSlice (
 						}
 						turboRegG = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileNameG
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -scaledRotation"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 4) + " " + (height / 2)
-							+ " " + sourcePoints[1][0] + " " + sourcePoints[1][1]
-							+ " " + ((3 * width) / 4) + " " + (height / 2)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 4)
+							+ " " + (height / 2)
+							+ " " + sourcePoints[1][0]
+							+ " " + sourcePoints[1][1]
+							+ " " + ((3 * width) / 4)
+							+ " " + (height / 2)
 							+ " -hideOutput"
 						);
 						turboRegB = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileNameB
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -scaledRotation"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 4) + " " + (height / 2)
-							+ " " + sourcePoints[1][0] + " " + sourcePoints[1][1]
-							+ " " + ((3 * width) / 4) + " " + (height / 2)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 4)
+							+ " " + (height / 2)
+							+ " " + sourcePoints[1][0]
+							+ " " + sourcePoints[1][1]
+							+ " " + ((3 * width) / 4)
+							+ " " + (height / 2)
 							+ " -hideOutput"
 						);
 						break;
@@ -1309,14 +1378,21 @@ private ImagePlus registerSlice (
 						}
 						turboRegR = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileNameR
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -affine"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 2) + " " + (height / 4)
-							+ " " + sourcePoints[1][0] + " " + sourcePoints[1][1]
-							+ " " + (width / 4) + " " + ((3 * height) / 4)
-							+ " " + sourcePoints[2][0] + " " + sourcePoints[2][1]
-							+ " " + ((3 * width) / 4) + " " + ((3 * height) / 4)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 2)
+							+ " " + (height / 4)
+							+ " " + sourcePoints[1][0]
+							+ " " + sourcePoints[1][1]
+							+ " " + (width / 4)
+							+ " " + ((3 * height) / 4)
+							+ " " + sourcePoints[2][0]
+							+ " " + sourcePoints[2][1]
+							+ " " + ((3 * width) / 4)
+							+ " " + ((3 * height) / 4)
 							+ " -hideOutput"
 						);
 						if (turboRegR == null) {
@@ -1324,26 +1400,40 @@ private ImagePlus registerSlice (
 						}
 						turboRegG = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileNameG
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -affine"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 2) + " " + (height / 4)
-							+ " " + sourcePoints[1][0] + " " + sourcePoints[1][1]
-							+ " " + (width / 4) + " " + ((3 * height) / 4)
-							+ " " + sourcePoints[2][0] + " " + sourcePoints[2][1]
-							+ " " + ((3 * width) / 4) + " " + ((3 * height) / 4)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 2)
+							+ " " + (height / 4)
+							+ " " + sourcePoints[1][0]
+							+ " " + sourcePoints[1][1]
+							+ " " + (width / 4)
+							+ " " + ((3 * height) / 4)
+							+ " " + sourcePoints[2][0]
+							+ " " + sourcePoints[2][1]
+							+ " " + ((3 * width) / 4)
+							+ " " + ((3 * height) / 4)
 							+ " -hideOutput"
 						);
 						turboRegB = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileNameB
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -affine"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 2) + " " + (height / 4)
-							+ " " + sourcePoints[1][0] + " " + sourcePoints[1][1]
-							+ " " + (width / 4) + " " + ((3 * height) / 4)
-							+ " " + sourcePoints[2][0] + " " + sourcePoints[2][1]
-							+ " " + ((3 * width) / 4) + " " + ((3 * height) / 4)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 2)
+							+ " " + (height / 4)
+							+ " " + sourcePoints[1][0]
+							+ " " + sourcePoints[1][1]
+							+ " " + (width / 4)
+							+ " " + ((3 * height) / 4)
+							+ " " + sourcePoints[2][0]
+							+ " " + sourcePoints[2][1]
+							+ " " + ((3 * width) / 4)
+							+ " " + ((3 * height) / 4)
 							+ " -hideOutput"
 						);
 						break;
@@ -1353,25 +1443,32 @@ private ImagePlus registerSlice (
 						return(null);
 					}
 				}
-				method = turboRegR.getClass().getMethod("getTransformedImage", null);
-				transformedSourceR = (ImagePlus)method.invoke(turboRegR, null);
-				method = turboRegG.getClass().getMethod("getTransformedImage", null);
-				transformedSourceG = (ImagePlus)method.invoke(turboRegG, null);
-				method = turboRegB.getClass().getMethod("getTransformedImage", null);
-				transformedSourceB = (ImagePlus)method.invoke(turboRegB, null);
+				method = turboRegR.getClass().getMethod("getTransformedImage",
+					(Class[])null);
+				transformedSourceR = (ImagePlus)method.invoke(turboRegR);
+				method = turboRegG.getClass().getMethod("getTransformedImage",
+					(Class[])null);
+				transformedSourceG = (ImagePlus)method.invoke(turboRegG);
+				method = turboRegB.getClass().getMethod("getTransformedImage",
+					(Class[])null);
+				transformedSourceB = (ImagePlus)method.invoke(turboRegB);
 				transformedSourceR.getStack().deleteLastSlice();
 				transformedSourceG.getStack().deleteLastSlice();
 				transformedSourceB.getStack().deleteLastSlice();
 				transformedSourceR.getProcessor().setMinAndMax(0.0, 255.0);
 				transformedSourceG.getProcessor().setMinAndMax(0.0, 255.0);
 				transformedSourceB.getProcessor().setMinAndMax(0.0, 255.0);
-				ImageConverter converterR = new ImageConverter(transformedSourceR);
-				ImageConverter converterG = new ImageConverter(transformedSourceG);
-				ImageConverter converterB = new ImageConverter(transformedSourceB);
+				ImageConverter converterR =
+					new ImageConverter(transformedSourceR);
+				ImageConverter converterG =
+					new ImageConverter(transformedSourceG);
+				ImageConverter converterB =
+					new ImageConverter(transformedSourceB);
 				converterR.convertToGray8();
 				converterG.convertToGray8();
 				converterB.convertToGray8();
-				final IndexColorModel icm = (IndexColorModel)imp.getProcessor().getColorModel();
+				final IndexColorModel icm =
+					(IndexColorModel)imp.getProcessor().getColorModel();
 				final byte[] pixels = (byte[])imp.getProcessor().getPixels();
 				r = (byte[])transformedSourceR.getProcessor().getPixels();
 				g = (byte[])transformedSourceG.getProcessor().getPixels();
@@ -1407,13 +1504,16 @@ private ImagePlus registerSlice (
 				ImagePlus transformedSourceG = null;
 				ImagePlus transformedSourceB = null;
 				final FileSaver sourceFileR = new FileSaver(sourceR);
-				final String sourcePathAndFileNameR = IJ.getDirectory("temp") + sourceR.getTitle();
+				final String sourcePathAndFileNameR =
+					IJ.getDirectory("temp") + sourceR.getTitle();
 				sourceFileR.saveAsTiff(sourcePathAndFileNameR);
 				final FileSaver sourceFileG = new FileSaver(sourceG);
-				final String sourcePathAndFileNameG = IJ.getDirectory("temp") + sourceG.getTitle();
+				final String sourcePathAndFileNameG =
+					IJ.getDirectory("temp") + sourceG.getTitle();
 				sourceFileG.saveAsTiff(sourcePathAndFileNameG);
 				final FileSaver sourceFileB = new FileSaver(sourceB);
-				final String sourcePathAndFileNameB = IJ.getDirectory("temp") + sourceB.getTitle();
+				final String sourcePathAndFileNameB =
+					IJ.getDirectory("temp") + sourceB.getTitle();
 				sourceFileB.saveAsTiff(sourcePathAndFileNameB);
 				switch (transformation) {
 					case 0: {
@@ -1427,10 +1527,13 @@ private ImagePlus registerSlice (
 						}
 						turboRegR = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileNameR
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -translation"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 2) + " " + (height / 2)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 2)
+							+ " " + (height / 2)
 							+ " -hideOutput"
 						);
 						if (turboRegR == null) {
@@ -1438,18 +1541,24 @@ private ImagePlus registerSlice (
 						}
 						turboRegG = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileNameG
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -translation"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 2) + " " + (height / 2)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 2)
+							+ " " + (height / 2)
 							+ " -hideOutput"
 						);
 						turboRegB = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileNameB
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -translation"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 2) + " " + (height / 2)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 2)
+							+ " " + (height / 2)
 							+ " -hideOutput"
 						);
 						break;
@@ -1471,14 +1580,21 @@ private ImagePlus registerSlice (
 						}
 						turboRegR = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileNameR
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -rigidBody"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 2) + " " + (height / 2)
-							+ " " + sourcePoints[1][0] + " " + sourcePoints[1][1]
-							+ " " + (width / 2) + " " + (height / 4)
-							+ " " + sourcePoints[2][0] + " " + sourcePoints[2][1]
-							+ " " + (width / 2) + " " + ((3 * height) / 4)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 2)
+							+ " " + (height / 2)
+							+ " " + sourcePoints[1][0]
+							+ " " + sourcePoints[1][1]
+							+ " " + (width / 2)
+							+ " " + (height / 4)
+							+ " " + sourcePoints[2][0]
+							+ " " + sourcePoints[2][1]
+							+ " " + (width / 2)
+							+ " " + ((3 * height) / 4)
 							+ " -hideOutput"
 						);
 						if (turboRegR == null) {
@@ -1488,24 +1604,37 @@ private ImagePlus registerSlice (
 							+ " -file " + sourcePathAndFileNameG
 							+ " " + width + " " + height
 							+ " -rigidBody"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 2) + " " + (height / 2)
-							+ " " + sourcePoints[1][0] + " " + sourcePoints[1][1]
-							+ " " + (width / 2) + " " + (height / 4)
-							+ " " + sourcePoints[2][0] + " " + sourcePoints[2][1]
-							+ " " + (width / 2) + " " + ((3 * height) / 4)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 2)
+							+ " " + (height / 2)
+							+ " " + sourcePoints[1][0]
+							+ " " + sourcePoints[1][1]
+							+ " " + (width / 2)
+							+ " " + (height / 4)
+							+ " " + sourcePoints[2][0]
+							+ " " + sourcePoints[2][1]
+							+ " " + (width / 2)
+							+ " " + ((3 * height) / 4)
 							+ " -hideOutput"
 						);
 						turboRegB = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileNameB
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -rigidBody"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 2) + " " + (height / 2)
-							+ " " + sourcePoints[1][0] + " " + sourcePoints[1][1]
-							+ " " + (width / 2) + " " + (height / 4)
-							+ " " + sourcePoints[2][0] + " " + sourcePoints[2][1]
-							+ " " + (width / 2) + " " + ((3 * height) / 4)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 2)
+							+ " " + (height / 2)
+							+ " " + sourcePoints[1][0]
+							+ " " + sourcePoints[1][1]
+							+ " " + (width / 2)
+							+ " " + (height / 4)
+							+ " " + sourcePoints[2][0]
+							+ " " + sourcePoints[2][1]
+							+ " " + (width / 2)
+							+ " " + ((3 * height) / 4)
 							+ " -hideOutput"
 						);
 						break;
@@ -1524,12 +1653,17 @@ private ImagePlus registerSlice (
 						}
 						turboRegR = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileNameR
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -scaledRotation"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 4) + " " + (height / 2)
-							+ " " + sourcePoints[1][0] + " " + sourcePoints[1][1]
-							+ " " + ((3 * width) / 4) + " " + (height / 2)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 4)
+							+ " " + (height / 2)
+							+ " " + sourcePoints[1][0]
+							+ " " + sourcePoints[1][1]
+							+ " " + ((3 * width) / 4)
+							+ " " + (height / 2)
 							+ " -hideOutput"
 						);
 						if (turboRegR == null) {
@@ -1537,22 +1671,32 @@ private ImagePlus registerSlice (
 						}
 						turboRegG = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileNameG
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -scaledRotation"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 4) + " " + (height / 2)
-							+ " " + sourcePoints[1][0] + " " + sourcePoints[1][1]
-							+ " " + ((3 * width) / 4) + " " + (height / 2)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 4)
+							+ " " + (height / 2)
+							+ " " + sourcePoints[1][0]
+							+ " " + sourcePoints[1][1]
+							+ " " + ((3 * width) / 4)
+							+ " " + (height / 2)
 							+ " -hideOutput"
 						);
 						turboRegB = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileNameB
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -scaledRotation"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 4) + " " + (height / 2)
-							+ " " + sourcePoints[1][0] + " " + sourcePoints[1][1]
-							+ " " + ((3 * width) / 4) + " " + (height / 2)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 4)
+							+ " " + (height / 2)
+							+ " " + sourcePoints[1][0]
+							+ " " + sourcePoints[1][1]
+							+ " " + ((3 * width) / 4)
+							+ " " + (height / 2)
 							+ " -hideOutput"
 						);
 						break;
@@ -1574,14 +1718,21 @@ private ImagePlus registerSlice (
 						}
 						turboRegR = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileNameR
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -affine"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 2) + " " + (height / 4)
-							+ " " + sourcePoints[1][0] + " " + sourcePoints[1][1]
-							+ " " + (width / 4) + " " + ((3 * height) / 4)
-							+ " " + sourcePoints[2][0] + " " + sourcePoints[2][1]
-							+ " " + ((3 * width) / 4) + " " + ((3 * height) / 4)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 2)
+							+ " " + (height / 4)
+							+ " " + sourcePoints[1][0]
+							+ " " + sourcePoints[1][1]
+							+ " " + (width / 4)
+							+ " " + ((3 * height) / 4)
+							+ " " + sourcePoints[2][0]
+							+ " " + sourcePoints[2][1]
+							+ " " + ((3 * width) / 4)
+							+ " " + ((3 * height) / 4)
 							+ " -hideOutput"
 						);
 						if (turboRegR == null) {
@@ -1589,26 +1740,40 @@ private ImagePlus registerSlice (
 						}
 						turboRegG = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileNameG
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -affine"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 2) + " " + (height / 4)
-							+ " " + sourcePoints[1][0] + " " + sourcePoints[1][1]
-							+ " " + (width / 4) + " " + ((3 * height) / 4)
-							+ " " + sourcePoints[2][0] + " " + sourcePoints[2][1]
-							+ " " + ((3 * width) / 4) + " " + ((3 * height) / 4)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 2)
+							+ " " + (height / 4)
+							+ " " + sourcePoints[1][0]
+							+ " " + sourcePoints[1][1]
+							+ " " + (width / 4)
+							+ " " + ((3 * height) / 4)
+							+ " " + sourcePoints[2][0]
+							+ " " + sourcePoints[2][1]
+							+ " " + ((3 * width) / 4)
+							+ " " + ((3 * height) / 4)
 							+ " -hideOutput"
 						);
 						turboRegB = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileNameB
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -affine"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 2) + " " + (height / 4)
-							+ " " + sourcePoints[1][0] + " " + sourcePoints[1][1]
-							+ " " + (width / 4) + " " + ((3 * height) / 4)
-							+ " " + sourcePoints[2][0] + " " + sourcePoints[2][1]
-							+ " " + ((3 * width) / 4) + " " + ((3 * height) / 4)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 2)
+							+ " " + (height / 4)
+							+ " " + sourcePoints[1][0]
+							+ " " + sourcePoints[1][1]
+							+ " " + (width / 4)
+							+ " " + ((3 * height) / 4)
+							+ " " + sourcePoints[2][0]
+							+ " " + sourcePoints[2][1]
+							+ " " + ((3 * width) / 4)
+							+ " " + ((3 * height) / 4)
 							+ " -hideOutput"
 						);
 						break;
@@ -1618,21 +1783,27 @@ private ImagePlus registerSlice (
 						return(null);
 					}
 				}
-				method = turboRegR.getClass().getMethod("getTransformedImage", null);
-				transformedSourceR = (ImagePlus)method.invoke(turboRegR, null);
-				method = turboRegG.getClass().getMethod("getTransformedImage", null);
-				transformedSourceG = (ImagePlus)method.invoke(turboRegG, null);
-				method = turboRegB.getClass().getMethod("getTransformedImage", null);
-				transformedSourceB = (ImagePlus)method.invoke(turboRegB, null);
+				method = turboRegR.getClass().getMethod("getTransformedImage",
+					(Class[])null);
+				transformedSourceR = (ImagePlus)method.invoke(turboRegR);
+				method = turboRegG.getClass().getMethod("getTransformedImage",
+					(Class[])null);
+				transformedSourceG = (ImagePlus)method.invoke(turboRegG);
+				method = turboRegB.getClass().getMethod("getTransformedImage",
+					(Class[])null);
+				transformedSourceB = (ImagePlus)method.invoke(turboRegB);
 				transformedSourceR.getStack().deleteLastSlice();
 				transformedSourceG.getStack().deleteLastSlice();
 				transformedSourceB.getStack().deleteLastSlice();
 				transformedSourceR.getProcessor().setMinAndMax(0.0, 255.0);
 				transformedSourceG.getProcessor().setMinAndMax(0.0, 255.0);
 				transformedSourceB.getProcessor().setMinAndMax(0.0, 255.0);
-				ImageConverter converterR = new ImageConverter(transformedSourceR);
-				ImageConverter converterG = new ImageConverter(transformedSourceG);
-				ImageConverter converterB = new ImageConverter(transformedSourceB);
+				ImageConverter converterR =
+					new ImageConverter(transformedSourceR);
+				ImageConverter converterG =
+					new ImageConverter(transformedSourceG);
+				ImageConverter converterB =
+					new ImageConverter(transformedSourceB);
 				converterR.convertToGray8();
 				converterG.convertToGray8();
 				converterB.convertToGray8();
@@ -1657,10 +1828,13 @@ private ImagePlus registerSlice (
 						}
 						turboReg = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileName
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -translation"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 2) + " " + (height / 2)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 2)
+							+ " " + (height / 2)
 							+ " -hideOutput"
 						);
 						break;
@@ -1682,14 +1856,21 @@ private ImagePlus registerSlice (
 						}
 						turboReg = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileName
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -rigidBody"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 2) + " " + (height / 2)
-							+ " " + sourcePoints[1][0] + " " + sourcePoints[1][1]
-							+ " " + (width / 2) + " " + (height / 4)
-							+ " " + sourcePoints[2][0] + " " + sourcePoints[2][1]
-							+ " " + (width / 2) + " " + ((3 * height) / 4)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 2)
+							+ " " + (height / 2)
+							+ " " + sourcePoints[1][0]
+							+ " " + sourcePoints[1][1]
+							+ " " + (width / 2)
+							+ " " + (height / 4)
+							+ " " + sourcePoints[2][0]
+							+ " " + sourcePoints[2][1]
+							+ " " + (width / 2)
+							+ " " + ((3 * height) / 4)
 							+ " -hideOutput"
 						);
 						break;
@@ -1708,12 +1889,17 @@ private ImagePlus registerSlice (
 						}
 						turboReg = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileName
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -scaledRotation"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 4) + " " + (height / 2)
-							+ " " + sourcePoints[1][0] + " " + sourcePoints[1][1]
-							+ " " + ((3 * width) / 4) + " " + (height / 2)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 4)
+							+ " " + (height / 2)
+							+ " " + sourcePoints[1][0]
+							+ " " + sourcePoints[1][1]
+							+ " " + ((3 * width) / 4)
+							+ " " + (height / 2)
 							+ " -hideOutput"
 						);
 						break;
@@ -1735,14 +1921,21 @@ private ImagePlus registerSlice (
 						}
 						turboReg = IJ.runPlugIn("TurboReg_", "-transform"
 							+ " -file " + sourcePathAndFileName
-							+ " " + width + " " + height
+							+ " " + width
+							+ " " + height
 							+ " -affine"
-							+ " " + sourcePoints[0][0] + " " + sourcePoints[0][1]
-							+ " " + (width / 2) + " " + (height / 4)
-							+ " " + sourcePoints[1][0] + " " + sourcePoints[1][1]
-							+ " " + (width / 4) + " " + ((3 * height) / 4)
-							+ " " + sourcePoints[2][0] + " " + sourcePoints[2][1]
-							+ " " + ((3 * width) / 4) + " " + ((3 * height) / 4)
+							+ " " + sourcePoints[0][0]
+							+ " " + sourcePoints[0][1]
+							+ " " + (width / 2)
+							+ " " + (height / 4)
+							+ " " + sourcePoints[1][0]
+							+ " " + sourcePoints[1][1]
+							+ " " + (width / 4)
+							+ " " + ((3 * height) / 4)
+							+ " " + sourcePoints[2][0]
+							+ " " + sourcePoints[2][1]
+							+ " " + ((3 * width) / 4)
+							+ " " + ((3 * height) / 4)
 							+ " -hideOutput"
 						);
 						break;
@@ -1755,19 +1948,25 @@ private ImagePlus registerSlice (
 				if (turboReg == null) {
 					throw(new ClassNotFoundException());
 				}
-				method = turboReg.getClass().getMethod("getTransformedImage", null);
-				ImagePlus transformedSource = (ImagePlus)method.invoke(turboReg, null);
+				method = turboReg.getClass().getMethod("getTransformedImage",
+					(Class[])null);
+				ImagePlus transformedSource =
+					(ImagePlus)method.invoke(turboReg);
 				transformedSource.getStack().deleteLastSlice();
 				switch (imp.getType()) {
 					case ImagePlus.GRAY8: {
-						transformedSource.getProcessor().setMinAndMax(0.0, 255.0);
-						final ImageConverter converter = new ImageConverter(transformedSource);
+						transformedSource.getProcessor().setMinAndMax(
+							0.0, 255.0);
+						final ImageConverter converter =
+							new ImageConverter(transformedSource);
 						converter.convertToGray8();
 						break;
 					}
 					case ImagePlus.GRAY16: {
-						transformedSource.getProcessor().setMinAndMax(0.0, 65535.0);
-						final ImageConverter converter = new ImageConverter(transformedSource);
+						transformedSource.getProcessor().setMinAndMax(
+							0.0, 65535.0);
+						final ImageConverter converter =
+							new ImageConverter(transformedSource);
 						converter.convertToGray16();
 						break;
 					}
@@ -1797,7 +1996,8 @@ private ImagePlus registerSlice (
 		IJ.error("Unexpected InvocationTargetException " + e);
 		return(null);
 	} catch (ClassNotFoundException e) {
-		IJ.error("Please download TurboReg_ from\nhttp://bigwww.epfl.ch/thevenaz/turboreg/");
+		IJ.error("Please download TurboReg_ from\n"
+			+ "http://bigwww.epfl.ch/thevenaz/turboreg/");
 		return(null);
 	}
 	return(source);
@@ -1808,8 +2008,6 @@ private ImagePlus registerSlice (
 /*====================================================================
 |	stackRegCredits
 \===================================================================*/
-
-/********************************************************************/
 class stackRegCredits
 	extends
 		Dialog
@@ -1817,17 +2015,24 @@ class stackRegCredits
 { /* begin class stackRegCredits */
 
 /*....................................................................
-	Public methods
+	private variables
 ....................................................................*/
+private static final long serialVersionUID = 1L;
 
-/********************************************************************/
+/*....................................................................
+	Container methods
+....................................................................*/
+/*------------------------------------------------------------------*/
 public Insets getInsets (
 ) {
 	return(new Insets(0, 20, 20, 20));
 } /* end getInsets */
 
-/********************************************************************/
-public stackRegCredits (
+/*....................................................................
+	constructors
+....................................................................*/
+/*------------------------------------------------------------------*/
+protected stackRegCredits (
 	final Frame parentWindow
 ) {
 	super(parentWindow, "StackReg", true);
@@ -1849,32 +2054,64 @@ public stackRegCredits (
 		}
 	);
 	buttonPanel.add(doneButton);
-	final TextArea text = new TextArea(25, 56);
+	final TextArea text = new TextArea(30, 56);
 	text.setEditable(false);
-	text.append("\n");
-	text.append(" This work is based on the following paper:\n");
-	text.append("\n");
-	text.append(" P. Th" + (char)233 + "venaz, U.E. Ruttimann, M. Unser\n");
-	text.append(" A Pyramid Approach to Subpixel Registration Based on Intensity\n");
-	text.append(" IEEE Transactions on Image Processing\n");
-	text.append(" vol. 7, no. 1, pp. 27-41, January 1998.\n");
-	text.append("\n");
-	text.append(" This paper is available on-line at\n");
-	text.append(" http://bigwww.epfl.ch/publications/thevenaz9801.html\n");
-	text.append("\n");
-	text.append(" Other relevant on-line publications are available at\n");
-	text.append(" http://bigwww.epfl.ch/publications/\n");
-	text.append("\n");
-	text.append(" Additional help available at\n");
-	text.append(" http://bigwww.epfl.ch/thevenaz/stackreg/\n");
-	text.append("\n");
-	text.append(" Ancillary TurboReg_ plugin available at\n");
-	text.append(" http://bigwww.epfl.ch/thevenaz/turboreg/\n");
-	text.append("\n");
-	text.append(" You'll be free to use this software for research purposes, but\n");
-	text.append(" you should not redistribute it without our consent. In addition,\n");
-	text.append(" we expect you to include a citation or acknowledgment whenever\n");
-	text.append(" you present or publish results that are based on it.\n");
+	text.append(
+		"\n");
+	text.append(
+		" This StackReg version is dated July 7, 2011\n");
+	text.append(
+		"\n");
+	text.append(
+		" ###\n");
+	text.append(
+		"\n");
+	text.append(
+		" This work is based on the following paper:\n");
+	text.append(
+		"\n");
+	text.append(
+		" P. Th" + (char)233 + "venaz, U.E. Ruttimann, M. Unser\n");
+	text.append(
+		" A Pyramid Approach to Subpixel Registration Based on Intensity\n");
+	text.append(
+		" IEEE Transactions on Image Processing\n");
+	text.append(
+		" vol. 7, no. 1, pp. 27-41, January 1998.\n");
+	text.append(
+		"\n");
+	text.append(
+		" This paper is available on-line at\n");
+	text.append(
+		" http://bigwww.epfl.ch/publications/thevenaz9801.html\n");
+	text.append(
+		"\n");
+	text.append(
+		" Other relevant on-line publications are available at\n");
+	text.append(
+		" http://bigwww.epfl.ch/publications/\n");
+	text.append(
+		"\n");
+	text.append(
+		" Additional help available at\n");
+	text.append(
+		" http://bigwww.epfl.ch/thevenaz/stackreg/\n");
+	text.append(
+		"\n");
+	text.append(
+		" Ancillary TurboReg_ plugin available at\n");
+	text.append(
+		" http://bigwww.epfl.ch/thevenaz/turboreg/\n");
+	text.append(
+		"\n");
+	text.append(
+		" You'll be free to use this software for research purposes, but\n");
+	text.append(
+		" you should not redistribute it without our consent. In addition,\n");
+	text.append(
+		" we expect you to include a citation or acknowledgment whenever\n");
+	text.append(
+		" you present or publish results that are based on it.\n");
 	add("North", separation);
 	add("Center", text);
 	add("South", buttonPanel);
