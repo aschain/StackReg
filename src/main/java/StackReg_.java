@@ -42,7 +42,9 @@
 | you to include a citation or acknowledgment whenever you present or
 | publish results that are based on it.
 \===================================================================*/
-
+ 
+ //AJS mods to make it work with Composite hyperstacks 11-4-2013
+ 
 // ImageJ
 import ij.IJ;
 import ij.ImagePlus;
