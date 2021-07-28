@@ -12,6 +12,7 @@
 		<relativePath />
 	</parent>
 
+	<groupId>ajs.stackreg</groupId>
 	<artifactId>StackReg_</artifactId>
 	<version>2.0.1-SNAPSHOT</version>
 
@@ -72,5 +73,31 @@
 			<artifactId>ij</artifactId>
 		</dependency>
 	</dependencies>
+	
+	<build>
+	<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<executions>
+				  <execution>
+				  	<id>first-execution</id>
+				    <phase>install</phase>
+				    <goals>
+				       <goal>exec</goal>
+				    </goals>
+				    <configuration>
+				      <executable>bash</executable>
+				      <workingDirectory>${basedir}</workingDirectory>
+				      <arguments>
+				    	  <argument>-c</argument>
+				    	  <argument>../copyToFiji.sh plugins ${project.artifactId} target/${project.build.finalName}.jar</argument>
+				      </arguments>
+				    </configuration>
+				  </execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 
 </project>
