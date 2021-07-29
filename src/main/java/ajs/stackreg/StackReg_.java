@@ -156,7 +156,7 @@ public void run (
 	gd.addChoice("Transformation:", transformationItem, "Rigid Body");
 	if(askFrms) {
 		gd.addCheckbox("Align frames instead of slices?", true);
-		gd.addCheckbox("Change all frames based on this slice?", false);
+		gd.addCheckbox("Change all slices per frame based on this slice?", false);
 	}
 	gd.addCheckbox("Credits", false);
 	gd.addMessage(msg);
@@ -330,10 +330,10 @@ public void run (
 	for (int s = tfrmsl + 1; (s <= maxfrmsl); s++) {
 		prg++;
 		pg.show(prg/(double)maxfrmsl);
-		if(doFrms) source = registerSlice(source, target, imp, width, height,
-			transformation, globalTransform, anchorPoints, colorWeights, ch, tsl, s);
-		else source = registerSlice(source, target, imp, width, height,
-			transformation, globalTransform, anchorPoints, colorWeights, ch, s, tfrm);
+		int z=s, t=tfrm;
+		if(doFrms) {z=tsl; t=s;}
+		source = registerSlice(source, target, imp, width, height,
+			transformation, globalTransform, anchorPoints, colorWeights, ch, z, t);
 		if (source == null) {
 			if(isHyper) imp.setPosition(ch,tsl,tfrm);
 			else imp.setSlice(targetSlice);
@@ -1109,14 +1109,7 @@ private ImagePlus registerSlice (
 				return(null);
 			}
 		}
-		//FileSaver sourceFile = new FileSaver(source);
-		//final String sourcePathAndFileName =
-		//	IJ.getDirectory("temp") + source.getTitle();
-		//sourceFile.saveAsTiff(sourcePathAndFileName);
-		//final FileSaver targetFile = new FileSaver(target);
-		//final String targetPathAndFileName =
-		//	IJ.getDirectory("temp") + target.getTitle();
-		//targetFile.saveAsTiff(targetPathAndFileName);
+
 		int[] crop=new int[] {0,0,width-1,height-1};
 		sourcePoints=new double[4][2];
 		targetPoints=new double[4][2];
@@ -1177,14 +1170,9 @@ private ImagePlus registerSlice (
 		turboreg.alignImages(source, crop, target, crop, TURBOREG_TRANSFORMS[transformation], sourcePoints, targetPoints, false);
 		target.setProcessor(null, source.getProcessor());
 		
-		//method = turboReg.getClass().getMethod("getSourcePoints", (Class[])null);
 		sourcePoints = turboreg.getSourcePoints();
-				//(double[][])method.invoke(turboReg);
-		//method = turboReg.getClass().getMethod("getTargetPoints", (Class[])null);
 		targetPoints = turboreg.getTargetPoints();
-				//(double[][])method.invoke(turboReg);
-		localTransform = getTransformationMatrix(targetPoints, sourcePoints,
-			transformation);
+		localTransform = getTransformationMatrix(targetPoints, sourcePoints, transformation);
 		double[][] rescued =
 			{{globalTransform[0][0],
 			globalTransform[0][1],
@@ -1204,18 +1192,84 @@ private ImagePlus registerSlice (
 				}
 			}
 		}
+		switch (transformation) {
+			case 0: {
+				sourcePoints = new double[1][3];
+				for (int i = 0; (i < 3); i++) {
+					sourcePoints[0][i] = 0.0;
+					for (int j = 0; (j < 3); j++) {
+						sourcePoints[0][i] += globalTransform[i][j]
+							* anchorPoints[0][j];
+					}
+				}
+				break;
+			}
+			case 1: {
+				sourcePoints = new double[3][3];
+				for (int i = 0; (i < 3); i++) {
+					sourcePoints[0][i] = 0.0;
+					sourcePoints[1][i] = 0.0;
+					sourcePoints[2][i] = 0.0;
+					for (int j = 0; (j < 3); j++) {
+						sourcePoints[0][i] += globalTransform[i][j]
+							* anchorPoints[0][j];
+						sourcePoints[1][i] += globalTransform[i][j]
+							* anchorPoints[1][j];
+						sourcePoints[2][i] += globalTransform[i][j]
+							* anchorPoints[2][j];
+					}
+				}
+				break;
+			}
+			case 2: {
+				sourcePoints = new double[2][3];
+				for (int i = 0; (i < 3); i++) {
+					sourcePoints[0][i] = 0.0;
+					sourcePoints[1][i] = 0.0;
+					for (int j = 0; (j < 3); j++) {
+						sourcePoints[0][i] += globalTransform[i][j]
+							* anchorPoints[0][j];
+						sourcePoints[1][i] += globalTransform[i][j]
+							* anchorPoints[1][j];
+					}
+				}
+				break;
+			}
+			case 3: {
+				sourcePoints = new double[3][3];
+				for (int i = 0; (i < 3); i++) {
+					sourcePoints[0][i] = 0.0;
+					sourcePoints[1][i] = 0.0;
+					sourcePoints[2][i] = 0.0;
+					for (int j = 0; (j < 3); j++) {
+						sourcePoints[0][i] += globalTransform[i][j]
+							* anchorPoints[0][j];
+						sourcePoints[1][i] += globalTransform[i][j]
+							* anchorPoints[1][j];
+						sourcePoints[2][i] += globalTransform[i][j]
+							* anchorPoints[2][j];
+					}
+				}
+				break;
+			}
+			default: {
+				IJ.error("Unexpected transformation");
+				return(null);
+			}
+		}
 		
+		turboreg.setSourcePoints(sourcePoints);
+		ImagePlus retSource=null;
 		int stsl=sl, endsls=sl;
 		if(changeAllSlices) {stsl=1;endsls=imp.getNSlices();}
 		for(int csl=stsl; csl<=endsls; csl++){
 			for(int nch=1; nch<=chs; nch++){
 				//imp.setPosition(nch,sl,frm);
-				IJ.log("\\Update:Stackreg: ch"+nch+" sl"+sl+" fr"+frm);
+				//IJ.log("\\Update:Stackreg: ch"+nch+" sl"+csl+" fr"+frm);
 				ip= imp.getStack().getProcessor(imp.getStackIndex(nch, csl, frm));
 				switch (imp.getType()) {
 					case ImagePlus.COLOR_256:
 					case ImagePlus.COLOR_RGB: {
-						source = getGray32("StackRegSource", ip, colorWeights);
 						break;
 					}
 					case ImagePlus.GRAY8: {
@@ -1242,9 +1296,6 @@ private ImagePlus registerSlice (
 					}
 				}
 				
-				//sourceFile = new FileSaver(source);
-				//sourceFile.saveAsTiff(sourcePathAndFileName);
-				
 				switch (imp.getType()) {
 					case ImagePlus.COLOR_256: {
 						source = new ImagePlus("StackRegSource", new ByteProcessor(
@@ -1252,9 +1303,6 @@ private ImagePlus registerSlice (
 							ip.getColorModel()));
 						ImageConverter converter = new ImageConverter(source);
 						converter.convertToRGB();
-						//Object turboRegR = null;
-						//Object turboRegG = null;
-						//Object turboRegB = null;
 						byte[] r = new byte[width * height];
 						byte[] g = new byte[width * height];
 						byte[] b = new byte[width * height];
@@ -1274,296 +1322,7 @@ private ImagePlus registerSlice (
 						transformedSourceR=turboreg.transformImage(sourceR, width, height, TURBOREG_TRANSFORMS[transformation], false);
 						transformedSourceG=turboreg.transformImage(sourceR, width, height, TURBOREG_TRANSFORMS[transformation], false);
 						transformedSourceB=turboreg.transformImage(sourceR, width, height, TURBOREG_TRANSFORMS[transformation], false);
-						/*
-						//final FileSaver sourceFileR = new FileSaver(sourceR);
-						//final String sourcePathAndFileNameR =
-						//	IJ.getDirectory("temp") + sourceR.getTitle();
-						//sourceFileR.saveAsTiff(sourcePathAndFileNameR);
-						//final FileSaver sourceFileG = new FileSaver(sourceG);
-						//final String sourcePathAndFileNameG =
-						//	IJ.getDirectory("temp") + sourceG.getTitle();
-						//sourceFileG.saveAsTiff(sourcePathAndFileNameG);
-						//final FileSaver sourceFileB = new FileSaver(sourceB);
-						//final String sourcePathAndFileNameB =
-						//	IJ.getDirectory("temp") + sourceB.getTitle();
-						//sourceFileB.saveAsTiff(sourcePathAndFileNameB);
-						switch (transformation) {
-							case 0: {
-								sourcePoints = new double[1][3];
-								for (int i = 0; (i < 3); i++) {
-									sourcePoints[0][i] = 0.0;
-									for (int j = 0; (j < 3); j++) {
-										sourcePoints[0][i] += globalTransform[i][j]
-											* anchorPoints[0][j];
-									}
-								}
-								turboRegR = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameR
-									+ " " + width
-									+ " " + height
-									+ " -translation"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 2)
-									+ " " + (height / 2)
-									+ " -hideOutput"
-								);
-								if (turboRegR == null) {
-									throw(new ClassNotFoundException());
-								}
-								turboRegG = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameG
-									+ " " + width
-									+ " " + height
-									+ " -translation"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 2)
-									+ " " + (height / 2)
-									+ " -hideOutput"
-								);
-								turboRegB = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameB
-									+ " " + width
-									+ " " + height
-									+ " -translation"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 2)
-									+ " " + (height / 2)
-									+ " -hideOutput"
-								);
-								break;
-							}
-							case 1: {
-								sourcePoints = new double[3][3];
-								for (int i = 0; (i < 3); i++) {
-									sourcePoints[0][i] = 0.0;
-									sourcePoints[1][i] = 0.0;
-									sourcePoints[2][i] = 0.0;
-									for (int j = 0; (j < 3); j++) {
-										sourcePoints[0][i] += globalTransform[i][j]
-											* anchorPoints[0][j];
-										sourcePoints[1][i] += globalTransform[i][j]
-											* anchorPoints[1][j];
-										sourcePoints[2][i] += globalTransform[i][j]
-											* anchorPoints[2][j];
-									}
-								}
-								turboRegR = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameR
-									+ " " + width + " " + height
-									+ " -rigidBody"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 2)
-									+ " " + (height / 2)
-									+ " " + sourcePoints[1][0]
-									+ " " + sourcePoints[1][1]
-									+ " " + (width / 2)
-									+ " " + (height / 4)
-									+ " " + sourcePoints[2][0]
-									+ " " + sourcePoints[2][1]
-									+ " " + (width / 2)
-									+ " " + ((3 * height) / 4)
-									+ " -hideOutput"
-								);
-								if (turboRegR == null) {
-									throw(new ClassNotFoundException());
-								}
-								turboRegG = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameG
-									+ " " + width + " " + height
-									+ " -rigidBody"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 2)
-									+ " " + (height / 2)
-									+ " " + sourcePoints[1][0]
-									+ " " + sourcePoints[1][1]
-									+ " " + (width / 2)
-									+ " " + (height / 4)
-									+ " " + sourcePoints[2][0]
-									+ " " + sourcePoints[2][1]
-									+ " " + (width / 2)
-									+ " " + ((3 * height) / 4)
-									+ " -hideOutput"
-								);
-								turboRegB = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameB
-									+ " " + width
-									+ " " + height
-									+ " -rigidBody"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 2)
-									+ " " + (height / 2)
-									+ " " + sourcePoints[1][0]
-									+ " " + sourcePoints[1][1]
-									+ " " + (width / 2)
-									+ " " + (height / 4)
-									+ " " + sourcePoints[2][0]
-									+ " " + sourcePoints[2][1]
-									+ " " + (width / 2)
-									+ " " + ((3 * height) / 4)
-									+ " -hideOutput"
-								);
-								break;
-							}
-							case 2: {
-								sourcePoints = new double[2][3];
-								for (int i = 0; (i < 3); i++) {
-									sourcePoints[0][i] = 0.0;
-									sourcePoints[1][i] = 0.0;
-									for (int j = 0; (j < 3); j++) {
-										sourcePoints[0][i] += globalTransform[i][j]
-											* anchorPoints[0][j];
-										sourcePoints[1][i] += globalTransform[i][j]
-											* anchorPoints[1][j];
-									}
-								}
-								turboRegR = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameR
-									+ " " + width
-									+ " " + height
-									+ " -scaledRotation"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 4)
-									+ " " + (height / 2)
-									+ " " + sourcePoints[1][0]
-									+ " " + sourcePoints[1][1]
-									+ " " + ((3 * width) / 4)
-									+ " " + (height / 2)
-									+ " -hideOutput"
-								);
-								if (turboRegR == null) {
-									throw(new ClassNotFoundException());
-								}
-								turboRegG = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameG
-									+ " " + width
-									+ " " + height
-									+ " -scaledRotation"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 4)
-									+ " " + (height / 2)
-									+ " " + sourcePoints[1][0]
-									+ " " + sourcePoints[1][1]
-									+ " " + ((3 * width) / 4)
-									+ " " + (height / 2)
-									+ " -hideOutput"
-								);
-								turboRegB = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameB
-									+ " " + width
-									+ " " + height
-									+ " -scaledRotation"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 4)
-									+ " " + (height / 2)
-									+ " " + sourcePoints[1][0]
-									+ " " + sourcePoints[1][1]
-									+ " " + ((3 * width) / 4)
-									+ " " + (height / 2)
-									+ " -hideOutput"
-								);
-								break;
-							}
-							case 3: {
-								sourcePoints = new double[3][3];
-								for (int i = 0; (i < 3); i++) {
-									sourcePoints[0][i] = 0.0;
-									sourcePoints[1][i] = 0.0;
-									sourcePoints[2][i] = 0.0;
-									for (int j = 0; (j < 3); j++) {
-										sourcePoints[0][i] += globalTransform[i][j]
-											* anchorPoints[0][j];
-										sourcePoints[1][i] += globalTransform[i][j]
-											* anchorPoints[1][j];
-										sourcePoints[2][i] += globalTransform[i][j]
-											* anchorPoints[2][j];
-									}
-								}
-								turboRegR = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameR
-									+ " " + width
-									+ " " + height
-									+ " -affine"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 2)
-									+ " " + (height / 4)
-									+ " " + sourcePoints[1][0]
-									+ " " + sourcePoints[1][1]
-									+ " " + (width / 4)
-									+ " " + ((3 * height) / 4)
-									+ " " + sourcePoints[2][0]
-									+ " " + sourcePoints[2][1]
-									+ " " + ((3 * width) / 4)
-									+ " " + ((3 * height) / 4)
-									+ " -hideOutput"
-								);
-								if (turboRegR == null) {
-									throw(new ClassNotFoundException());
-								}
-								turboRegG = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameG
-									+ " " + width
-									+ " " + height
-									+ " -affine"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 2)
-									+ " " + (height / 4)
-									+ " " + sourcePoints[1][0]
-									+ " " + sourcePoints[1][1]
-									+ " " + (width / 4)
-									+ " " + ((3 * height) / 4)
-									+ " " + sourcePoints[2][0]
-									+ " " + sourcePoints[2][1]
-									+ " " + ((3 * width) / 4)
-									+ " " + ((3 * height) / 4)
-									+ " -hideOutput"
-								);
-								turboRegB = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameB
-									+ " " + width
-									+ " " + height
-									+ " -affine"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 2)
-									+ " " + (height / 4)
-									+ " " + sourcePoints[1][0]
-									+ " " + sourcePoints[1][1]
-									+ " " + (width / 4)
-									+ " " + ((3 * height) / 4)
-									+ " " + sourcePoints[2][0]
-									+ " " + sourcePoints[2][1]
-									+ " " + ((3 * width) / 4)
-									+ " " + ((3 * height) / 4)
-									+ " -hideOutput"
-								);
-								break;
-							}
-							default: {
-								IJ.error("Unexpected transformation");
-								return(null);
-							}
-						}
-						method = turboRegR.getClass().getMethod("getTransformedImage",
-							(Class[])null);
-						transformedSourceR = (ImagePlus)method.invoke(turboRegR);
-						method = turboRegG.getClass().getMethod("getTransformedImage",
-							(Class[])null);
-						transformedSourceG = (ImagePlus)method.invoke(turboRegG);
-						method = turboRegB.getClass().getMethod("getTransformedImage",
-							(Class[])null);
-						transformedSourceB = (ImagePlus)method.invoke(turboRegB);
-						*/
+						
 						transformedSourceR.getStack().deleteLastSlice();
 						transformedSourceG.getStack().deleteLastSlice();
 						transformedSourceB.getStack().deleteLastSlice();
@@ -1596,9 +1355,7 @@ private ImagePlus registerSlice (
 						break;
 					}
 					case ImagePlus.COLOR_RGB: {
-						//Object turboRegR = null;
-						//Object turboRegG = null;
-						//Object turboRegB = null;
+						source = getGray32("StackRegSource", ip, colorWeights);
 						final byte[] r = new byte[width * height];
 						final byte[] g = new byte[width * height];
 						final byte[] b = new byte[width * height];
@@ -1618,297 +1375,7 @@ private ImagePlus registerSlice (
 						transformedSourceR=turboreg.transformImage(sourceR, width, height, TURBOREG_TRANSFORMS[transformation], false);
 						transformedSourceG=turboreg.transformImage(sourceR, width, height, TURBOREG_TRANSFORMS[transformation], false);
 						transformedSourceB=turboreg.transformImage(sourceR, width, height, TURBOREG_TRANSFORMS[transformation], false);
-						/*
-						final FileSaver sourceFileR = new FileSaver(sourceR);
-						final String sourcePathAndFileNameR =
-							IJ.getDirectory("temp") + sourceR.getTitle();
-						sourceFileR.saveAsTiff(sourcePathAndFileNameR);
-						final FileSaver sourceFileG = new FileSaver(sourceG);
-						final String sourcePathAndFileNameG =
-							IJ.getDirectory("temp") + sourceG.getTitle();
-						sourceFileG.saveAsTiff(sourcePathAndFileNameG);
-						final FileSaver sourceFileB = new FileSaver(sourceB);
-						final String sourcePathAndFileNameB =
-							IJ.getDirectory("temp") + sourceB.getTitle();
-						sourceFileB.saveAsTiff(sourcePathAndFileNameB);
-						switch (transformation) {
-							case 0: {
-								sourcePoints = new double[1][3];
-								for (int i = 0; (i < 3); i++) {
-									sourcePoints[0][i] = 0.0;
-									for (int j = 0; (j < 3); j++) {
-										sourcePoints[0][i] += globalTransform[i][j]
-											* anchorPoints[0][j];
-									}
-								}
-								turboRegR = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameR
-									+ " " + width
-									+ " " + height
-									+ " -translation"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 2)
-									+ " " + (height / 2)
-									+ " -hideOutput"
-								);
-								if (turboRegR == null) {
-									throw(new ClassNotFoundException());
-								}
-								turboRegG = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameG
-									+ " " + width
-									+ " " + height
-									+ " -translation"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 2)
-									+ " " + (height / 2)
-									+ " -hideOutput"
-								);
-								turboRegB = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameB
-									+ " " + width
-									+ " " + height
-									+ " -translation"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 2)
-									+ " " + (height / 2)
-									+ " -hideOutput"
-								);
-								break;
-							}
-							case 1: {
-								sourcePoints = new double[3][3];
-								for (int i = 0; (i < 3); i++) {
-									sourcePoints[0][i] = 0.0;
-									sourcePoints[1][i] = 0.0;
-									sourcePoints[2][i] = 0.0;
-									for (int j = 0; (j < 3); j++) {
-										sourcePoints[0][i] += globalTransform[i][j]
-											* anchorPoints[0][j];
-										sourcePoints[1][i] += globalTransform[i][j]
-											* anchorPoints[1][j];
-										sourcePoints[2][i] += globalTransform[i][j]
-											* anchorPoints[2][j];
-									}
-								}
-								turboRegR = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameR
-									+ " " + width
-									+ " " + height
-									+ " -rigidBody"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 2)
-									+ " " + (height / 2)
-									+ " " + sourcePoints[1][0]
-									+ " " + sourcePoints[1][1]
-									+ " " + (width / 2)
-									+ " " + (height / 4)
-									+ " " + sourcePoints[2][0]
-									+ " " + sourcePoints[2][1]
-									+ " " + (width / 2)
-									+ " " + ((3 * height) / 4)
-									+ " -hideOutput"
-								);
-								if (turboRegR == null) {
-									throw(new ClassNotFoundException());
-								}
-								turboRegG = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameG
-									+ " " + width + " " + height
-									+ " -rigidBody"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 2)
-									+ " " + (height / 2)
-									+ " " + sourcePoints[1][0]
-									+ " " + sourcePoints[1][1]
-									+ " " + (width / 2)
-									+ " " + (height / 4)
-									+ " " + sourcePoints[2][0]
-									+ " " + sourcePoints[2][1]
-									+ " " + (width / 2)
-									+ " " + ((3 * height) / 4)
-									+ " -hideOutput"
-								);
-								turboRegB = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameB
-									+ " " + width
-									+ " " + height
-									+ " -rigidBody"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 2)
-									+ " " + (height / 2)
-									+ " " + sourcePoints[1][0]
-									+ " " + sourcePoints[1][1]
-									+ " " + (width / 2)
-									+ " " + (height / 4)
-									+ " " + sourcePoints[2][0]
-									+ " " + sourcePoints[2][1]
-									+ " " + (width / 2)
-									+ " " + ((3 * height) / 4)
-									+ " -hideOutput"
-								);
-								break;
-							}
-							case 2: {
-								sourcePoints = new double[2][3];
-								for (int i = 0; (i < 3); i++) {
-									sourcePoints[0][i] = 0.0;
-									sourcePoints[1][i] = 0.0;
-									for (int j = 0; (j < 3); j++) {
-										sourcePoints[0][i] += globalTransform[i][j]
-											* anchorPoints[0][j];
-										sourcePoints[1][i] += globalTransform[i][j]
-											* anchorPoints[1][j];
-									}
-								}
-								turboRegR = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameR
-									+ " " + width
-									+ " " + height
-									+ " -scaledRotation"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 4)
-									+ " " + (height / 2)
-									+ " " + sourcePoints[1][0]
-									+ " " + sourcePoints[1][1]
-									+ " " + ((3 * width) / 4)
-									+ " " + (height / 2)
-									+ " -hideOutput"
-								);
-								if (turboRegR == null) {
-									throw(new ClassNotFoundException());
-								}
-								turboRegG = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameG
-									+ " " + width
-									+ " " + height
-									+ " -scaledRotation"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 4)
-									+ " " + (height / 2)
-									+ " " + sourcePoints[1][0]
-									+ " " + sourcePoints[1][1]
-									+ " " + ((3 * width) / 4)
-									+ " " + (height / 2)
-									+ " -hideOutput"
-								);
-								turboRegB = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameB
-									+ " " + width
-									+ " " + height
-									+ " -scaledRotation"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 4)
-									+ " " + (height / 2)
-									+ " " + sourcePoints[1][0]
-									+ " " + sourcePoints[1][1]
-									+ " " + ((3 * width) / 4)
-									+ " " + (height / 2)
-									+ " -hideOutput"
-								);
-								break;
-							}
-							case 3: {
-								sourcePoints = new double[3][3];
-								for (int i = 0; (i < 3); i++) {
-									sourcePoints[0][i] = 0.0;
-									sourcePoints[1][i] = 0.0;
-									sourcePoints[2][i] = 0.0;
-									for (int j = 0; (j < 3); j++) {
-										sourcePoints[0][i] += globalTransform[i][j]
-											* anchorPoints[0][j];
-										sourcePoints[1][i] += globalTransform[i][j]
-											* anchorPoints[1][j];
-										sourcePoints[2][i] += globalTransform[i][j]
-											* anchorPoints[2][j];
-									}
-								}
-								turboRegR = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameR
-									+ " " + width
-									+ " " + height
-									+ " -affine"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 2)
-									+ " " + (height / 4)
-									+ " " + sourcePoints[1][0]
-									+ " " + sourcePoints[1][1]
-									+ " " + (width / 4)
-									+ " " + ((3 * height) / 4)
-									+ " " + sourcePoints[2][0]
-									+ " " + sourcePoints[2][1]
-									+ " " + ((3 * width) / 4)
-									+ " " + ((3 * height) / 4)
-									+ " -hideOutput"
-								);
-								if (turboRegR == null) {
-									throw(new ClassNotFoundException());
-								}
-								turboRegG = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameG
-									+ " " + width
-									+ " " + height
-									+ " -affine"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 2)
-									+ " " + (height / 4)
-									+ " " + sourcePoints[1][0]
-									+ " " + sourcePoints[1][1]
-									+ " " + (width / 4)
-									+ " " + ((3 * height) / 4)
-									+ " " + sourcePoints[2][0]
-									+ " " + sourcePoints[2][1]
-									+ " " + ((3 * width) / 4)
-									+ " " + ((3 * height) / 4)
-									+ " -hideOutput"
-								);
-								turboRegB = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileNameB
-									+ " " + width
-									+ " " + height
-									+ " -affine"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 2)
-									+ " " + (height / 4)
-									+ " " + sourcePoints[1][0]
-									+ " " + sourcePoints[1][1]
-									+ " " + (width / 4)
-									+ " " + ((3 * height) / 4)
-									+ " " + sourcePoints[2][0]
-									+ " " + sourcePoints[2][1]
-									+ " " + ((3 * width) / 4)
-									+ " " + ((3 * height) / 4)
-									+ " -hideOutput"
-								);
-								break;
-							}
-							default: {
-								IJ.error("Unexpected transformation");
-								return(null);
-							}
-						}
-						method = turboRegR.getClass().getMethod("getTransformedImage",
-							(Class[])null);
-						transformedSourceR = (ImagePlus)method.invoke(turboRegR);
-						method = turboRegG.getClass().getMethod("getTransformedImage",
-							(Class[])null);
-						transformedSourceG = (ImagePlus)method.invoke(turboRegG);
-						method = turboRegB.getClass().getMethod("getTransformedImage",
-							(Class[])null);
-						transformedSourceB = (ImagePlus)method.invoke(turboRegB);
-						*/
+					
 						transformedSourceR.getStack().deleteLastSlice();
 						transformedSourceG.getStack().deleteLastSlice();
 						transformedSourceB.getStack().deleteLastSlice();
@@ -1933,145 +1400,6 @@ private ImagePlus registerSlice (
 					case ImagePlus.GRAY8:
 					case ImagePlus.GRAY16:
 					case ImagePlus.GRAY32: {
-						/*
-						switch (transformation) {
-							case 0: {
-								sourcePoints = new double[1][3];
-								for (int i = 0; (i < 3); i++) {
-									sourcePoints[0][i] = 0.0;
-									for (int j = 0; (j < 3); j++) {
-										sourcePoints[0][i] += globalTransform[i][j]
-											* anchorPoints[0][j];
-									}
-								}
-								turboReg = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileName
-									+ " " + width
-									+ " " + height
-									+ " -translation"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 2)
-									+ " " + (height / 2)
-									+ " -hideOutput"
-								);
-								break;
-							}
-							case 1: {
-								sourcePoints = new double[3][3];
-								for (int i = 0; (i < 3); i++) {
-									sourcePoints[0][i] = 0.0;
-									sourcePoints[1][i] = 0.0;
-									sourcePoints[2][i] = 0.0;
-									for (int j = 0; (j < 3); j++) {
-										sourcePoints[0][i] += globalTransform[i][j]
-											* anchorPoints[0][j];
-										sourcePoints[1][i] += globalTransform[i][j]
-											* anchorPoints[1][j];
-										sourcePoints[2][i] += globalTransform[i][j]
-											* anchorPoints[2][j];
-									}
-								}
-								turboReg = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileName
-									+ " " + width
-									+ " " + height
-									+ " -rigidBody"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 2)
-									+ " " + (height / 2)
-									+ " " + sourcePoints[1][0]
-									+ " " + sourcePoints[1][1]
-									+ " " + (width / 2)
-									+ " " + (height / 4)
-									+ " " + sourcePoints[2][0]
-									+ " " + sourcePoints[2][1]
-									+ " " + (width / 2)
-									+ " " + ((3 * height) / 4)
-									+ " -hideOutput"
-								);
-								break;
-							}
-							case 2: {
-								sourcePoints = new double[2][3];
-								for (int i = 0; (i < 3); i++) {
-									sourcePoints[0][i] = 0.0;
-									sourcePoints[1][i] = 0.0;
-									for (int j = 0; (j < 3); j++) {
-										sourcePoints[0][i] += globalTransform[i][j]
-											* anchorPoints[0][j];
-										sourcePoints[1][i] += globalTransform[i][j]
-											* anchorPoints[1][j];
-									}
-								}
-								turboReg = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileName
-									+ " " + width
-									+ " " + height
-									+ " -scaledRotation"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 4)
-									+ " " + (height / 2)
-									+ " " + sourcePoints[1][0]
-									+ " " + sourcePoints[1][1]
-									+ " " + ((3 * width) / 4)
-									+ " " + (height / 2)
-									+ " -hideOutput"
-								);
-								break;
-							}
-							case 3: {
-								sourcePoints = new double[3][3];
-								for (int i = 0; (i < 3); i++) {
-									sourcePoints[0][i] = 0.0;
-									sourcePoints[1][i] = 0.0;
-									sourcePoints[2][i] = 0.0;
-									for (int j = 0; (j < 3); j++) {
-										sourcePoints[0][i] += globalTransform[i][j]
-											* anchorPoints[0][j];
-										sourcePoints[1][i] += globalTransform[i][j]
-											* anchorPoints[1][j];
-										sourcePoints[2][i] += globalTransform[i][j]
-											* anchorPoints[2][j];
-									}
-								}
-								turboReg = IJ.runPlugIn("TurboReg_", "-transform"
-									+ " -file " + sourcePathAndFileName
-									+ " " + width
-									+ " " + height
-									+ " -affine"
-									+ " " + sourcePoints[0][0]
-									+ " " + sourcePoints[0][1]
-									+ " " + (width / 2)
-									+ " " + (height / 4)
-									+ " " + sourcePoints[1][0]
-									+ " " + sourcePoints[1][1]
-									+ " " + (width / 4)
-									+ " " + ((3 * height) / 4)
-									+ " " + sourcePoints[2][0]
-									+ " " + sourcePoints[2][1]
-									+ " " + ((3 * width) / 4)
-									+ " " + ((3 * height) / 4)
-									+ " -hideOutput"
-								);
-								break;
-							}
-							default: {
-								IJ.error("Unexpected transformation");
-								return(null);
-							}
-						}
-						if (turboReg == null) {
-							throw(new ClassNotFoundException());
-						}
-						method = turboReg.getClass().getMethod("getTransformedImage",
-							(Class[])null);
-							
-						ImagePlus transformedSource =
-							(ImagePlus)method.invoke(turboReg);
-							*/
 						ImagePlus transformedSource = turboreg.transformImage(source, width, height, TURBOREG_TRANSFORMS[transformation], false);
 						transformedSource.getStack().deleteLastSlice();
 						switch (imp.getType()) {
@@ -2100,7 +1428,6 @@ private ImagePlus registerSlice (
 							}
 						}
 						imp.getStack().setProcessor(transformedSource.getProcessor(), imp.getStackIndex(nch, csl, frm));
-						//imp.setProcessor(null, transformedSource.getProcessor());
 						break;
 					}
 					default: {
@@ -2108,21 +1435,13 @@ private ImagePlus registerSlice (
 						return(null);
 					}
 				}
+				if(nch==ch && csl==sl)retSource=source;
 			} /*end for loop for each channel in a composite stack*/
 		}
-		return(source);
-	//} catch (NoSuchMethodException e) {
-	//	IJ.error("Unexpected NoSuchMethodException " + e);
-	//	return(null);
-	//} catch (IllegalAccessException e) {
-	//	IJ.error("Unexpected IllegalAccessException " + e);
-	//	return(null);
-	//} catch (InvocationTargetException e) {
-	//	IJ.error("Unexpected InvocationTargetException " + e);
-	//	return(null);
+		return(retSource);
+
 	} catch (Exception e) {
-		IJ.error("Please download TurboReg_ from\n"
-			+ "http://bigwww.epfl.ch/thevenaz/turboreg/");
+		IJ.error(e.getLocalizedMessage());
 		return(null);
 	}
 } /* end registerSlice */
